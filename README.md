@@ -4,7 +4,7 @@
 
 **Documentation**: None
 
-**Source Code**: https://carvgit.ics.forth.gr/kdeep-learning/carvllm-trace
+**Source Code**: https://carvgit.ics.forth.gr/deep-learning/carvllm-trace
 
 ---
 
@@ -27,5 +27,5 @@ to carvllm-trace, see the [contributing guide](CONTRIBUTING.md).
 
 ## License
 
-Distributed under the terms of the [MIT license](LICENSE.md), carvllm-trace is
+Distributed under the terms of the [Apache v2 License](LICENSE.md), carvllm-trace is
 free and open source software.
