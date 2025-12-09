@@ -1,0 +1,7 @@
+repos:
+    - repo: https://github.com/pre-commit/mirrors-add-header
+      rev: v1.0.0  # use the latest release
+      hooks:
+          - id: add-header
+            args: ['-t', 'LICENSE_HEADER']
+            files: '^(src|tests|examples)/.*\.py$'
