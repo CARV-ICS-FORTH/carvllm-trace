@@ -1,0 +1,61 @@
+# MkDocs static site generator configuration file.
+#
+# For more information, visit https://www.mkdocs.org/user-guide/configuration/.
+
+---
+copyright: Copyright &copy; 2025-Present Christos Kozanitis
+extra:
+  social:
+    - icon: fontawesome/brands/gitlab
+      link: https://gitlab.com/kozanitis
+    - icon: fontawesome/solid/envelope
+      link: mailto://kozanitis@ics.forth.gr
+extra_javascript:
+  - https://unpkg.com/mermaid@9.1.6/dist/mermaid.min.js
+markdown_extensions:
+  - admonition
+  - codehilite:
+      guess_lang: false
+      linenums: true
+  - footnotes
+  - meta
+  - pymdownx.arithmatex
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+  - toc:
+      permalink: true
+nav:
+  - Home:
+      - README: index.md
+      - Contributing: CONTRIBUTING.md
+      - License: LICENSE.md
+  - Usage: usage/index.md
+  - API Reference: api/index.md
+plugins:
+  - mkdocstrings
+  - search
+repo_name: carvllm-trace
+repo_url: https://carvgit.ics.forth.gr/kdeep-learning/carvllm-trace
+site_author: Christos Kozanitis
+site_description: |
+  Software for processing of the carvllm-trace
+site_name: carvllm-trace
+site_url: None
+theme:
+  featues:
+    - navigation.tabs
+  name: material
+  palette:
+    accent: cyan
+    primary: teal
