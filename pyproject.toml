@@ -12,7 +12,7 @@ authors = [{ email = "kozanitis@ics.forth.gr", name = "Christos Kozanitis" }]
 description = "Software for processing of the carvllm-trace"
 documentation = "None"
 dynamic = ["dependencies"]
-homepage = "https://carvgit.ics.forth.gr/kdeep-learning/carvllm-trace"
+homepage = "https://carvgit.ics.forth.gr/deep-learning/carvllm-trace"
 keywords = []
 license = "MIT"
 name = "carvllm-trace"
