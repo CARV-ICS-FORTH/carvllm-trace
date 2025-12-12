@@ -92,6 +92,7 @@ markers = [
     "unit: mark as unit test.",
 ]
 python_classes = "Test*"
+python_path = ["src"]
 python_files = [
     "__init__.py",
     "test_*.py",
