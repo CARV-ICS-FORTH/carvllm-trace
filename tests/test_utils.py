@@ -1,4 +1,4 @@
-#   Copyright 2025 - 2025 Christos Kozanitis, FORTH, Greece
+#   Copyright 2025 - 2026 Christos Kozanitis, FORTH, Greece
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -18,101 +18,86 @@ import pytest
 from pathlib import Path
 from itertools import zip_longest
 
-@pytest.fixture
-def file_factory(tmp_path):
-    """
-Returns a function to create files with arbitrary content.
-    """
-    def _create_csv(content: str, filename: str = "trace.txt") -> Path:
-        file_path = tmp_path / filename
-        file_path.write_text(content)
-        return file_path
-    return _create_csv
+import pandas as pd
 
-def test_load_file(file_factory):
-    content = '\n'.join([
-        '[prof-debug] #1 | name=Memcpy HtoD (Pinned -> Device) | device_us=1393.915 | cpu_us=0.0 | time_range_start_us=942.737 | time_range_end_us=2336.652',
-        '[prof-debug] #2 | name=Memcpy HtoD (Pinned -> Device) | device_us=0.6080000000001746 | cpu_us=0.0 | time_range_start_us=3317.352 | time_range_end_us=3317.96',
-        '[prof-debug] #3 | name=ncclDevKernel_AllGather_RING_LL(ncclDevKernelArgsStorage<4096ul>) | device_us=6177.607000000018 | cpu_us=0.0 | time_range_start_us=363777.119 | time_range_end_us=369954.726',
-        '[prof-debug] #4 | name=Memset (Device) | device_us=0.8319999999948777 | cpu_us=0.0 | time_range_start_us=300908.284 | time_range_end_us=300909.116',
-        '[prof-debug] #5 | name=ncclDevKernel_AllGather_RING_LL(ncclDevKernelArgsStorage<4096ul>) | device_us=13942.407999999938 | cpu_us=0.0 | time_range_start_us=829450.831 | time_range_end_us=843393.239',
-        '[prof-debug] #6 | name=Memcpy HtoD (Pageable -> Device) | device_us=0.31999999994877726 | cpu_us=0.0 | time_range_start_us=301059.579 | time_range_end_us=301059.899',
-        '[prof-debug] #7 | name=Memcpy HtoD (Pageable -> Device) | device_us=0.31999999994877726 | cpu_us=0.0 | time_range_start_us=301059.579 | time_range_end_us=301059.899',
-        ]
+def test_same_type_intervals_are_merged():
+    df = pd.DataFrame(
+        {
+            "start": [1, 4],
+            "end": [5, 10],
+            "type": ["A", "A"],
+        }
     )
-    file_path = file_factory(content)
-    timeline = utils.parse_trace(file_path)
-    expected_answers = [
-        [942.737, 2336.652, utils.event_type.COMPUTE_OR_MEM],
-        [3317.352, 3317.96, utils.event_type.COMPUTE_OR_MEM],
-        [363777.119, 369954.726, utils.event_type.NCCL],
-        [300908.284, 300909.116, utils.event_type.COMPUTE_OR_MEM],
-        [829450.831, 843393.239, utils.event_type.NCCL],
-        [301059.579, 301059.899, utils.event_type.COMPUTE_OR_MEM],
-        [301059.579, 301059.899, utils.event_type.COMPUTE_OR_MEM]
-    ]
-    for e, t in zip_longest(expected_answers, timeline):
-        assert e==t
+    result = find_type_overlaps(df, "A", "B")
+    # No B intervals → no overlaps,
+    # but merge must not explode
+    assert result.empty
 
-@pytest.mark.parameterize(
-    "interval1, interval2, expected",
-    [
-        ([10,12], [28,30], [[10, 12], [28, 30]]),
-        ([10,15], [13, 14], [[10, 15]]),
-        ([10, 15], [14, 17], [[10, 17]]),
-        ([10, 15], [9, 11], [[9, 15]]),
-    ]
-)
-def test_merge_intervals_parameterized(interval1, interval2, expected):
-    result = utils.merge_intervals(interval1, interval2)
-    assert result == expected
+def test_no_overlap_between_types():
+    df = pd.DataFrame(
+        {
+            "start": [1, 10],
+            "end": [5, 15],
+            "type": ["A", "B"],
+        }
+    )
 
-@pytest.mark.parameterize(
-    "interval1, interval2, expected",
-    [
-        ([10,12], [28,30], False),
-        ([10,15], [13, 14], True),
-        ([10, 15], [14, 17], True),
-        ([10, 15], [9, 11], True),
-    ]
-)
-def test_intervals_overlap_parameterized(interval1, interval2, expected):
-    result = utils.intervals_overlap(interval1, interval2)
-    assert result == expected
+    result = find_type_overlaps(df, "A", "B")
 
-@pytest.mark.parameterize(
-    "interval1, interval2, expected",
-    [
-        ([10,12], [28,30], 0),
-        ([10,15], [13, 14], 2), #positions 13,14
-        ([10, 15], [14, 17], 2), #positions 14,15
-        ([10, 15], [9, 11], 7), #positions: 15-9+1
-    ]
-)
-def test_measure_overlapping_parameterized(interval1, interval2, expected):
-    result = utils.measure_overlapping(interval1, interval2)
-    assert result == expected
+    assert result.empty
 
-def test_overlap_pipelines():
-    index_timeline = [
-        [10, 15],
-        [15, 20],
-        [20, 25],
-        [25, 30]
-    ]
-    target_timeline = [
-        [12, 14],
-        [16, 17],
-        [17, 18],
-        [20, 24],
-        [23, 28]
-    ]
-    expected = [
-        [10, 15, 3], #12, 13, 14
-        [15, 20, 3], #16, 17, 19
-        [20, 25, 6], #25-20+1
-        [25, 30, 4], #25-28
-    ]
-    result = utils.overlap_pipelines(index_timeline, target_timeline)
-    for e, r in zip_longest(expected, result):
-        assert e == r
+
+def test_overlap_after_merge():
+    df = pd.DataFrame(
+        {
+            "start": [1, 4, 6],
+            "end":   [5, 8, 10],
+            "type":  ["A", "A", "B"],
+        }
+    )
+
+    result = find_type_overlaps(df, "A", "B")
+
+    expected = pd.DataFrame(
+        {
+            "a_start": [1],
+            "a_end": [8],
+            "b_start": [6],
+            "b_end": [10],
+        }
+    )
+    pd.testing.assert_frame_equal(result, expected)
+
+def test_multiple_overlappings():
+    df = pd.DataFrame(
+        {
+            "start": [1, 10, 4],
+            "end":   [5, 12, 22],
+            "type":  ["A", "A", "B"],
+        }
+    )
+
+    result = find_type_overlaps(df, "A", "B")
+
+    expected = pd.DataFrame(
+        {
+            "a_start": [1, 10],
+            "a_end": [5, 12],
+            "b_start": [4, 4],
+            "b_end": [22, 22],
+        }
+    )
+    pd.testing.assert_frame_equal(result, expected)
+
+def test_touching_intervals_do_not_overlap():
+    df = pd.DataFrame(
+        {
+            "start": [1, 5],
+            "end": [5, 10],
+            "type": ["A", "B"],
+        }
+    )
+
+    result = find_type_overlaps(df, "A", "B")
+
+    assert result.empty
