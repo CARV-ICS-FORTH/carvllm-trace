@@ -39,8 +39,6 @@ def read_events_csv(
     return result_df
 
 
-import pandas as pd
-
 
 REQUIRED_COLUMNS = {"start", "end", "type"}
 
@@ -133,6 +131,74 @@ def _find_overlaps_cross_product(df_a, df_b):
         }
     )[["a_start", "a_end", "b_start", "b_end"]]
 
+
+def measure_percentage_overlapping(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Must contain columns: ["a_start", "a_end", "b_start", "b_end"]
+
+    Returns
+    -------
+    pd.DataFrame with columns:
+        ["a_start", "a_end", "overlapping"]
+    One row per unique A interval. "overlapping" is the fraction of the A interval
+    covered by the union of overlapping B intervals.
+    """
+
+    if df.empty:
+        return pd.DataFrame(columns=["a_start", "a_end", "overlapping"])
+
+    # Ensure B intervals are clipped to A intervals
+    df = df.copy()
+    df["b_start_clipped"] = df[["a_start", "b_start"]].max(axis=1)
+    df["b_end_clipped"] = df[["a_end", "b_end"]].min(axis=1)
+    df = df[df["b_start_clipped"] < df["b_end_clipped"]]
+
+    if df.empty:
+        a_intervals = df[["a_start", "a_end"]].drop_duplicates()
+        a_intervals["overlapping"] = 0.0
+        return a_intervals
+
+    # Sort by A interval and B start
+    df = df.sort_values(["a_start", "a_end", "b_start_clipped"]).reset_index(drop=True)
+
+    # Group by each unique A interval
+    def compute_fraction(group):
+        # Merge overlapping B intervals
+        b_intervals = group[["b_start_clipped", "b_end_clipped"]].values
+        merged = []
+        cur_start, cur_end = b_intervals[0]
+        for s, e in b_intervals[1:]:
+            if s <= cur_end:
+                cur_end = max(cur_end, e)
+            else:
+                merged.append((cur_start, cur_end))
+                cur_start, cur_end = s, e
+        merged.append((cur_start, cur_end))
+
+        a_len = group["a_end"].iloc[0] - group["a_start"].iloc[0]
+        overlap_len = sum(e - s for s, e in merged)
+        fraction = overlap_len / a_len if a_len > 0 else 0.0
+        return pd.Series({"overlapping": fraction})
+
+    result = (
+        df.groupby(["a_start", "a_end"], sort=False)
+          .apply(compute_fraction)
+          .reset_index()
+    )
+
+    # Include A intervals that had no overlapping B
+    all_a_intervals = df[["a_start", "a_end"]].drop_duplicates()
+    result = pd.merge(
+        all_a_intervals,
+        result,
+        on=["a_start", "a_end"],
+        how="left"
+    ).fillna({"overlapping": 0.0})
+
+    return result[["a_start", "a_end", "overlapping"]]
 
 # def _find_overlapping_intervals(df_a, df_b):
 #     # Convert to Interval Series (assuming closed='right' by default)
