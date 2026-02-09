@@ -47,9 +47,6 @@ REQUIRED_COLUMNS = {"start", "end", "type"}
 
 def find_type_overlaps(
     df: pd.DataFrame,
-    start_col: str = "start",
-    end_col: str = "end",
-    type_col: str = "type",
     type_a: str = "nccl",
     type_b: str = "no_nccl",
 ) -> pd.DataFrame:
@@ -71,15 +68,22 @@ def find_type_overlaps(
     """
     # ---- 2) Merge same-type overlapping intervals ----
     merged = _merge_same_type(df)
+    #print('merged: ', merged)
 
     # ---- 3) Split by types ----
     df_a = merged[merged["type"] == type_a][["start", "end"]].reset_index(drop=True)
     df_b = merged[merged["type"] == type_b][["start", "end"]].reset_index(drop=True)
+    #print('df_a: ', df_a)
+    #print('df_b: ', df_b)
 
     if df_a.empty or df_b.empty:
         return _empty_overlap_df()
 
-    return _find_pairwise_overlaps(df_a, df_b)
+    return _find_overlaps_interval_index(df_a, df_b)
+
+
+def _empty_overlap_df():
+    return pd.DataFrame(columns=['a_start', 'a_end', 'b_start', 'b_end'])
 
 
 def _find_overlaps_interval_index(df_a, df_b):
@@ -93,7 +97,9 @@ def _find_overlaps_interval_index(df_a, df_b):
     if not hits:
         return _empty_overlap_df()
 
-    return pd.DataFrame(hits, columns=["a_start", "a_end", "b_start", "b_end"])
+    ret =  pd.DataFrame(hits, columns=["a_start", "a_end", "b_start", "b_end"])
+    #print ('Returning ', ret)
+    return ret
 
 
 
@@ -109,7 +115,8 @@ def _merge_same_type(df):
           .drop(columns="_g")
     )
 
-def _find_pairwise_overlaps(df_a, df_b):
+#simple but inefficient
+def _find_overlaps_cross_product(df_a, df_b):
     pairs = df_a.merge(df_b, how="cross", suffixes=("_a", "_b"))
 
     overlaps = pairs[
@@ -125,3 +132,36 @@ def _find_pairwise_overlaps(df_a, df_b):
             "end_b": "b_end",
         }
     )[["a_start", "a_end", "b_start", "b_end"]]
+
+
+# def _find_overlapping_intervals(df_a, df_b):
+#     # Convert to Interval Series (assuming closed='right' by default)
+#     intervals_a = pd.IntervalIndex.from_arrays(df_a['start'], df_a['end'], closed='right')
+#     intervals_b = pd.IntervalIndex.from_arrays(df_b['start'], df_b['end'], closed='right')
+#
+#     # Create DataFrames with interval columns and original indices
+#     df_a_intervals = df_a.copy()
+#     df_a_intervals['interval'] = intervals_a
+#     df_a_intervals['df_name'] = 'A'
+#
+#     df_b_intervals = df_b.copy()
+#     df_b_intervals['interval'] = intervals_b
+#     df_b_intervals['df_name'] = 'B'
+#
+#     # Find all pairwise overlaps efficiently using broadcasted comparison
+#     overlaps_mask = intervals_a[:, None].overlaps(intervals_b)
+#
+#     # Get indices of overlapping pairs
+#     a_indices, b_indices = np.nonzero(overlaps_mask)
+#
+#     # Create result DataFrame with overlapping pairs
+#     result = pd.DataFrame({
+#         'df_a_index': a_indices,
+#         'df_b_index': b_indices,
+#         'a_start': df_a['start'].iloc[a_indices],
+#         'a_end': df_a['end'].iloc[a_indices],
+#         'b_start': df_b['start'].iloc[b_indices],
+#         'b_end': df_b['end'].iloc[b_indices]
+#     })
+#
+#     return result

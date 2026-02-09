@@ -20,6 +20,9 @@ from itertools import zip_longest
 
 import pandas as pd
 
+from carvllm_trace.utils import find_type_overlaps
+
+
 def test_same_type_intervals_are_merged():
     df = pd.DataFrame(
         {
@@ -41,9 +44,7 @@ def test_no_overlap_between_types():
             "type": ["A", "B"],
         }
     )
-
     result = find_type_overlaps(df, "A", "B")
-
     assert result.empty
 
 
@@ -55,9 +56,7 @@ def test_overlap_after_merge():
             "type":  ["A", "A", "B"],
         }
     )
-
     result = find_type_overlaps(df, "A", "B")
-
     expected = pd.DataFrame(
         {
             "a_start": [1],
