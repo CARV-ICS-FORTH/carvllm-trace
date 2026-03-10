@@ -28,12 +28,11 @@ def read_events_csv(
     df = pd.read_csv(path, sep=delimiter)
     result_df = (
         df
-        .rename(columns={start_col: "start", end_col: "end"})
+        .rename(columns={start_col: "start", end_col: "end", method_col: "type"})
         .assign(
-            type=lambda d: d[method_col].astype(str).str.startswith("NCCL").map({True: "nccl", False: "no_nccl"})
+            type=lambda d: d["type"].astype(str).str.startswith("NCCL").map({True: "nccl", False: "no_nccl"})
         )
         [["start", "end", "type"]]
-        .astype(('float', 'float', 'string'))
         .copy()
     )
     return result_df

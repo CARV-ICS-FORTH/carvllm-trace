@@ -20,7 +20,7 @@ import argparse
 import os
 import sys
 
-from carvllm_trace.utils import read_events_csv, find_type_overlaps
+from carvllm_trace.utils import read_events_csv, find_type_overlaps, measure_percentage_overlapping
 
 
 def validate_file_path(filepath):
@@ -31,6 +31,7 @@ def validate_file_path(filepath):
 
 
 def process_data(file_path):
+    print(f"Processing file: {file_path}")
     df = read_events_csv(
         file_path,
         start_col="time_range_start_us",
@@ -43,6 +44,8 @@ def process_data(file_path):
         type_a="nccl",
         type_b="no_nccl"
     )
+    percentages = measure_percentage_overlapping(comm_overlaps)
+    percentages.style()
 
 
 
@@ -54,7 +57,7 @@ def main():
     )
 
     parser.add_argument(
-        "file_path",
+        "-file_path",
         type=validate_file_path,
         help="Path to the input csv file"
     )
