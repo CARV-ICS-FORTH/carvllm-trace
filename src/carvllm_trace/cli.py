@@ -45,7 +45,7 @@ def process_data(file_path):
         type_b="no_nccl"
     )
     percentages = measure_percentage_overlapping(comm_overlaps)
-    percentages.style()
+    print(percentages)
 
 
 

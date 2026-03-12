@@ -30,10 +30,10 @@ def read_events_csv(
         df
         .rename(columns={start_col: "start", end_col: "end", method_col: "type"})
         .assign(
-            type=lambda d: d["type"].astype(str).str.startswith("NCCL").map({True: "nccl", False: "no_nccl"})
+            type=lambda d: d["type"].astype(str).str.startswith(("NCCL", "nccl")).map({True: "nccl", False: "no_nccl"})
         )
         [["start", "end", "type"]]
-        .copy()
+        .copy() #evaluate if needed
     )
     return result_df
 
