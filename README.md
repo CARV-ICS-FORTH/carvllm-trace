@@ -29,3 +29,7 @@ to carvllm-trace, see the [contributing guide](CONTRIBUTING.md).
 
 Distributed under the terms of the [Apache v2 License](LICENSE.md), carvllm-trace is
 free and open source software.
+
+## Acknowledgement
+
+This work is funded by the European Commission through project NET4EXA (Grant Agreement: [101175702](https://doi.org/10.3030/101175702))
